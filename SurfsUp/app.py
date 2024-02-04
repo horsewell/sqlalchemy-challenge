@@ -169,10 +169,21 @@ def fromstartdate(start):
     return jsonify(result)
 
 #################################################
+@app.route("/api/v1.0/<start>/<end>")
+def fromrange(start,end):
+    session = Session(engine)
+    fromrange_query = session.query(
+            func.max(Measurement.tobs).label("TMAX"),
+            func.avg(Measurement.tobs).label("TAVG"),
+            func.min(Measurement.tobs).label("TMIN")
+            ).\
+        filter(Measurement.date >= start, Measurement.date <= end).all()
 
+    fromrange_df = pd.DataFrame(fromrange_query, columns=['TMAX', 'TAVG', 'TMIN'])
+    result = fromrange_df.iloc[0].to_dict()
 
-
-
+    session.close()
+    return jsonify(result)
 
 #################################################
 if __name__ == "__main__":
