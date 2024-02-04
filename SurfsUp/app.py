@@ -26,7 +26,7 @@ else:
 # Declare a Base using `automap_base()`
 Base = automap_base()
 
-# Use the Base class to reflect the database tablespw
+# Use the Base class to reflect the database tables
 Base.prepare(autoload_with=engine, reflect=True)
 
 # Assign the measurement class to a variable called `Measurement` and
@@ -37,13 +37,51 @@ Station = Base.classes.station
 # Create a session
 session = Session(engine)
 
+# Find the most recent date in the data set.
+Last_date_str = session.query(Measurement.date).order_by(Measurement.date.desc()).first()[0]
+Last_date = dt.date.fromisoformat(Last_date_str)
+
+# Calculate the date one year from the last date in data set.
+Prev_Last_date = dt.date(Last_date.year-1,Last_date.month,Last_date.day)
+
+# Perform a query to retrieve the data and precipitation scores
+ann_prcp = session.query(Measurement.date,func.max(Measurement.prcp)).\
+    filter(Measurement.date >= func.strftime("%Y-%m-%d",Prev_Last_date)).\
+    group_by(Measurement.date).\
+    order_by(Measurement.date).all()
+
+# Save the query results as a Pandas DataFrame and set the index to the date column
+df = pd.DataFrame(ann_prcp, columns=['date', 'prcp'])
+df.set_index('date', inplace=True)
+
+# Use Pandas to calcualte the summary statistics for the precipitation data
+
+qy_ann_prcp = session.query(Measurement.date,Measurement.prcp).\
+    filter(Measurement.date >= func.strftime("%Y-%m-%d",Prev_Last_date)).\
+    order_by(Measurement.date).all()
+
+ann_prcp_df = pd.DataFrame(qy_ann_prcp, columns=['date', 'prcp'])
+ann_prcp_df.set_index('date', inplace=True)
+
+ann_prcp_max = ann_prcp_df.groupby(["date"]).max()["prcp"]
+ann_prcp_min = ann_prcp_df.groupby(["date"]).min()["prcp"]
+ann_prcp_sum = ann_prcp_df.groupby(["date"]).sum()["prcp"]
+ann_prcp_count = ann_prcp_df.groupby(["date"]).count()["prcp"]
+
+ann_prcp_dict = {"Max": round(ann_prcp_max, 2), "Min": round(ann_prcp_min, 2),
+                 "Sum": round(ann_prcp_sum, 2), "Count":round(ann_prcp_count, 2)}
+
+ann_prcp_summary_df = pd.DataFrame(ann_prcp_dict)
+
+
+
+# Close Session
+session.close()
 
 #################################################
 # Flask Setup
 #################################################
 app = Flask(__name__)
-
-
 
 #################################################
 # Flask Routes
@@ -59,7 +97,12 @@ def index():
         f"/api/v1.0/&lt;start&gt;/&lt;end&gt;<br/>"
     )
 
-
+@app.route("/api/v1.0/precipitation")
+def precipitation():
+    result={}
+    for index, row in ann_prcp_summary_df.iterrows():
+        result[index]=dict(row)
+    return jsonify(result) 
 
 
 
