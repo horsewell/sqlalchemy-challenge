@@ -79,6 +79,31 @@ stations_df = pd.DataFrame(stations_query, columns=['station', 'name','latitude'
 stations_df.set_index('station', inplace=True) 
 
 
+#################################################
+# Design a query to find the most active stations
+# List the stations and the counts in descending order
+most_active_stations_query = session.query(Measurement.station,func.count(Measurement.station)).\
+    group_by(Measurement.station).\
+    order_by(func.count(Measurement.station).desc())
+
+all_most_active_stations = most_active_stations_query.all()
+all_most_active_stations
+
+# Using the most active station id from the previous query, calculate the lowest, highest, and average temperature.
+most_active_station_id = most_active_stations_query.first()[0]
+most_active_station_id
+
+temp_summ = session.query(func.min(Measurement.tobs),func.max(Measurement.tobs),func.avg(Measurement.tobs)).\
+    filter(Measurement.station == most_active_station_id).all()
+
+#################################################
+ann_tobs_query = session.query(Measurement.date,Measurement.tobs).\
+    filter(Measurement.date >= func.strftime("%Y-%m-%d",Prev_Last_date), Measurement.station == most_active_station_id).\
+    order_by(Measurement.date).all()
+
+ann_tobs_df = pd.DataFrame(ann_tobs_query, columns=['date', 'tobs'])
+ann_tobs_df.set_index('date', inplace=True)
+
 
 # Close Session
 session.close()
@@ -102,6 +127,7 @@ def index():
         f"/api/v1.0/&lt;start&gt;/&lt;end&gt;<br/>"
     )
 
+#################################################
 @app.route("/api/v1.0/precipitation")
 def precipitation():
     result={}
@@ -109,6 +135,7 @@ def precipitation():
         result[index]=dict(row)
     return jsonify(result) 
 
+#################################################
 @app.route("/api/v1.0/stations")
 def stations():
     result={}
@@ -116,8 +143,16 @@ def stations():
         result[index]=dict(row)
     return jsonify(result) 
 
+#################################################
+@app.route("/api/v1.0/tobs")
+def tobs():
+    result={}
+    for index, row in ann_tobs_df.iterrows():
+        result[index]=dict(row)   
+    return jsonify(result)
 
+#################################################
 
-
+#################################################
 if __name__ == "__main__":
     app.run(debug=True)
