@@ -152,6 +152,27 @@ def tobs():
     return jsonify(result)
 
 #################################################
+@app.route("/api/v1.0/<start>")
+def fromstartdate(start):
+    session = Session(engine)
+    fr_start_date_query = session.query(
+            func.max(Measurement.tobs).label("TMAX"),
+            func.avg(Measurement.tobs).label("TAVG"),
+            func.min(Measurement.tobs).label("TMIN")
+            ).\
+        filter(Measurement.date >= start).all()
+
+    fr_start_date_df = pd.DataFrame(fr_start_date_query, columns=['TMAX', 'TAVG', 'TMIN'])
+    result = fr_start_date_df.iloc[0].to_dict()
+
+    session.close()
+    return jsonify(result)
+
+#################################################
+
+
+
+
 
 #################################################
 if __name__ == "__main__":
