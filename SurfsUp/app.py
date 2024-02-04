@@ -18,7 +18,7 @@ engine = create_engine(f"sqlite:///{database_path}")
 Base = automap_base()
 
 # Use the Base class to reflect the database tables
-Base.prepare(autoload_with=engine)
+Base.prepare(autoload_with=engine, reflect=True)
 
 # Assign the measurement class to a variable called `Measurement` and
 # the station class to a variable called `Station`
