@@ -56,11 +56,11 @@ df.set_index('date', inplace=True)
 
 # Use Pandas to calcualte the summary statistics for the precipitation data
 
-qy_ann_prcp = session.query(Measurement.date,Measurement.prcp).\
+ann_prcp_query = session.query(Measurement.date,Measurement.prcp).\
     filter(Measurement.date >= func.strftime("%Y-%m-%d",Prev_Last_date)).\
     order_by(Measurement.date).all()
 
-ann_prcp_df = pd.DataFrame(qy_ann_prcp, columns=['date', 'prcp'])
+ann_prcp_df = pd.DataFrame(ann_prcp_query, columns=['date', 'prcp'])
 ann_prcp_df.set_index('date', inplace=True)
 
 ann_prcp_max = ann_prcp_df.groupby(["date"]).max()["prcp"]
@@ -72,6 +72,11 @@ ann_prcp_dict = {"Max": round(ann_prcp_max, 2), "Min": round(ann_prcp_min, 2),
                  "Sum": round(ann_prcp_sum, 2), "Count":round(ann_prcp_count, 2)}
 
 ann_prcp_summary_df = pd.DataFrame(ann_prcp_dict)
+
+#################################################
+stations_query = session.query(Station.station,Station.name, Station.latitude, Station.longitude, Station.elevation).all()
+stations_df = pd.DataFrame(stations_query, columns=['station', 'name','latitude','longitude','elevation'])
+stations_df.set_index('station', inplace=True) 
 
 
 
@@ -104,7 +109,12 @@ def precipitation():
         result[index]=dict(row)
     return jsonify(result) 
 
-
+@app.route("/api/v1.0/stations")
+def stations():
+    result={}
+    for index, row in stations_df.iterrows():
+        result[index]=dict(row)
+    return jsonify(result) 
 
 
 
