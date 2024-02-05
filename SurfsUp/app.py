@@ -13,28 +13,6 @@ from pathlib import Path
 from flask import Flask, jsonify
 
 #################################################
-# Database Setup
-#################################################
-
-# Create engine using the `hawaii.sqlite` database file
-database_path = Path("../Resources/hawaii.sqlite")
-if database_path.is_file(): # check that the path is correct
-    engine = create_engine(f"sqlite:///{database_path}")
-else:
-    print(f'The file {database_path} does not exist')
- 
-# Declare a Base using `automap_base()`
-Base = automap_base()
-
-# Use the Base class to reflect the database tables
-Base.prepare(autoload_with=engine, reflect=True)
-
-# Assign the measurement class to a variable called `Measurement` and
-# the station class to a variable called `Station`
-Measurement = Base.classes.measurement
-Station = Base.classes.station
-
-#################################################
 # Functions
 #################################################
 
@@ -66,6 +44,27 @@ def create_JSON_date_range(start, end=None):
     session.close()
     return jsonify(result)
 
+#################################################
+# Database Setup
+#################################################
+
+# Create engine using the `hawaii.sqlite` database file
+database_path = Path("../Resources/hawaii.sqlite")
+if database_path.is_file(): # check that the path is correct
+    engine = create_engine(f"sqlite:///{database_path}")
+else:
+    print(f'The file {database_path} does not exist')
+ 
+# Declare a Base using `automap_base()`
+Base = automap_base()
+
+# Use the Base class to reflect the database tables
+Base.prepare(autoload_with=engine, reflect=True)
+
+# Assign the measurement class to a variable called `Measurement` and
+# the station class to a variable called `Station`
+Measurement = Base.classes.measurement
+Station = Base.classes.station
 
 #################################################
 # Create a session
