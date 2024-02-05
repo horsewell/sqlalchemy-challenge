@@ -18,11 +18,11 @@ from flask import Flask, jsonify
 
 # Create engine using the `hawaii.sqlite` database file
 database_path = Path("../Resources/hawaii.sqlite")
-if database_path.is_file():
+if database_path.is_file(): # check that the path is correct
     engine = create_engine(f"sqlite:///{database_path}")
 else:
     print(f'The file {database_path} does not exist')
-
+ 
 # Declare a Base using `automap_base()`
 Base = automap_base()
 
@@ -34,6 +34,42 @@ Base.prepare(autoload_with=engine, reflect=True)
 Measurement = Base.classes.measurement
 Station = Base.classes.station
 
+#################################################
+# Functions
+#################################################
+
+def create_JSON_from_dict(df):
+    result={}
+    for index, row in df.iterrows():
+        result[index]=dict(row)   
+    return jsonify(result)
+
+def create_JSON_date_range(start, end=None):
+    session = Session(engine)
+
+    if end is None:
+        fr_start_date_query = session.query(
+                func.max(Measurement.tobs).label("TMAX"),
+                func.avg(Measurement.tobs).label("TAVG"),
+                func.min(Measurement.tobs).label("TMIN")
+                ).\
+            filter(Measurement.date >= start).all()
+    else:
+        fr_start_date_query = session.query(
+                func.max(Measurement.tobs).label("TMAX"),
+                func.avg(Measurement.tobs).label("TAVG"),
+                func.min(Measurement.tobs).label("TMIN")
+                ).\
+            filter(Measurement.date >= start, Measurement.date <= end).all()
+
+    fr_start_date_query = pd.DataFrame(fr_start_date_query, columns=['TMAX', 'TAVG', 'TMIN'])
+    result = fr_start_date_query.iloc[0].to_dict()
+
+    session.close()
+    return jsonify(result)
+
+
+#################################################
 # Create a session
 session = Session(engine)
 
@@ -55,7 +91,6 @@ df = pd.DataFrame(ann_prcp, columns=['date', 'prcp'])
 df.set_index('date', inplace=True)
 
 # Use Pandas to calcualte the summary statistics for the precipitation data
-
 ann_prcp_query = session.query(Measurement.date,Measurement.prcp).\
     filter(Measurement.date >= func.strftime("%Y-%m-%d",Prev_Last_date)).\
     order_by(Measurement.date).all()
@@ -104,7 +139,6 @@ ann_tobs_query = session.query(Measurement.date,Measurement.tobs).\
 ann_tobs_df = pd.DataFrame(ann_tobs_query, columns=['date', 'tobs'])
 ann_tobs_df.set_index('date', inplace=True)
 
-
 # Close Session
 session.close()
 
@@ -130,60 +164,60 @@ def index():
 #################################################
 @app.route("/api/v1.0/precipitation")
 def precipitation():
-    result={}
-    for index, row in ann_prcp_summary_df.iterrows():
-        result[index]=dict(row)
-    return jsonify(result) 
+    #result={}
+    #for index, row in ann_prcp_summary_df.iterrows():
+    #    result[index]=dict(row)
+    return create_JSON_from_dict(ann_prcp_summary_df) #jsonify(result) 
 
 #################################################
 @app.route("/api/v1.0/stations")
 def stations():
-    result={}
-    for index, row in stations_df.iterrows():
-        result[index]=dict(row)
-    return jsonify(result) 
+    #result={}
+    #for index, row in stations_df.iterrows():
+    #    result[index]=dict(row)
+    return create_JSON_from_dict(stations_df) #jsonify(result) 
 
 #################################################
 @app.route("/api/v1.0/tobs")
 def tobs():
-    result={}
-    for index, row in ann_tobs_df.iterrows():
-        result[index]=dict(row)   
-    return jsonify(result)
+    #result={}
+    #for index, row in ann_tobs_df.iterrows():
+    #    result[index]=dict(row)
+    return create_JSON_from_dict(ann_tobs_df) #jsonify(result)
 
 #################################################
 @app.route("/api/v1.0/<start>")
 def fromstartdate(start):
     session = Session(engine)
-    fr_start_date_query = session.query(
-            func.max(Measurement.tobs).label("TMAX"),
-            func.avg(Measurement.tobs).label("TAVG"),
-            func.min(Measurement.tobs).label("TMIN")
-            ).\
-        filter(Measurement.date >= start).all()
+    #fr_start_date_query = session.query(
+    #        func.max(Measurement.tobs).label("TMAX"),
+    #        func.avg(Measurement.tobs).label("TAVG"),
+    #        func.min(Measurement.tobs).label("TMIN")
+    #        ).\
+    #    filter(Measurement.date >= start).all()
 
-    fr_start_date_df = pd.DataFrame(fr_start_date_query, columns=['TMAX', 'TAVG', 'TMIN'])
-    result = fr_start_date_df.iloc[0].to_dict()
+    #fr_start_date_df = pd.DataFrame(fr_start_date_query, columns=['TMAX', 'TAVG', 'TMIN'])
+    #result = fr_start_date_df.iloc[0].to_dict()
 
-    session.close()
-    return jsonify(result)
+    #session.close()
+    return create_JSON_date_range(start, end=None) #jsonify(result)
 
 #################################################
 @app.route("/api/v1.0/<start>/<end>")
-def fromrange(start,end):
-    session = Session(engine)
-    fromrange_query = session.query(
-            func.max(Measurement.tobs).label("TMAX"),
-            func.avg(Measurement.tobs).label("TAVG"),
-            func.min(Measurement.tobs).label("TMIN")
-            ).\
-        filter(Measurement.date >= start, Measurement.date <= end).all()
+def fromrange(start, end):
+    #session = Session(engine)
+    #fromrange_query = session.query(
+    #        func.max(Measurement.tobs).label("TMAX"),
+    #        func.avg(Measurement.tobs).label("TAVG"),
+    #        func.min(Measurement.tobs).label("TMIN")
+    #        ).\
+    #    filter(Measurement.date >= start, Measurement.date <= end).all()
 
-    fromrange_df = pd.DataFrame(fromrange_query, columns=['TMAX', 'TAVG', 'TMIN'])
-    result = fromrange_df.iloc[0].to_dict()
+    #fromrange_df = pd.DataFrame(fromrange_query, columns=['TMAX', 'TAVG', 'TMIN'])
+    #result = fromrange_df.iloc[0].to_dict()
 
-    session.close()
-    return jsonify(result)
+    #session.close()
+    return create_JSON_date_range(start, end) #jjsonify(result)
 
 #################################################
 if __name__ == "__main__":
