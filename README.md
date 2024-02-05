@@ -4,7 +4,7 @@ Congratulations! You've decided to treat yourself to a long holiday vacation in 
 
 ## Part 1: Analyse and Explore the Climate Data
 
-Must run climate.ipynb as a jupyter notebook. It accessess the hawaii.sqlite file that is in the Resources folder using SQLAlchemy
+Must run SurfsUp/climate.ipynb as a jupyter notebook. It accessess the hawaii.sqlite file that is in the /Resources folder using SQLAlchemy
 
 ### Precipitation Analysis
 
@@ -24,7 +24,7 @@ Must run climate.ipynb as a jupyter notebook. It accessess the hawaii.sqlite fil
 
 ## Part 2: Design Your Climate App
 
-Need to navigate the command line to the folder that app.py is in and run it. Then go to the browser location that the Flask app is running (default is http://127.0.0.1:5000/). Get the data via a SQLAlchemy session by accessing the hawaii.sqlite in the Resources folder.
+Need to navigate the command line to the folder that SurfsUp/app.py is in and run it. Then go to the browser location that the Flask app is running (default is http://127.0.0.1:5000/). Get the data via a SQLAlchemy session by accessing the hawaii.sqlite in the /Resources folder.
 
 The flask app should show the following:
 
