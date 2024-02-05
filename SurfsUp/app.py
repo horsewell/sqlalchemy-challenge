@@ -80,17 +80,7 @@ Last_date = dt.date.fromisoformat(Last_date_str)
 # Calculate the date one year from the last date in data set.
 Prev_Last_date = dt.date(Last_date.year-1,Last_date.month,Last_date.day)
 
-# Perform a query to retrieve the data and precipitation scores
-ann_prcp = session.query(Measurement.date,func.max(Measurement.prcp)).\
-    filter(Measurement.date >= func.strftime("%Y-%m-%d",Prev_Last_date)).\
-    group_by(Measurement.date).\
-    order_by(Measurement.date).all()
-
-# Save the query results as a Pandas DataFrame and set the index to the date column
-df = pd.DataFrame(ann_prcp, columns=['date', 'prcp'])
-df.set_index('date', inplace=True)
-
-# Use Pandas to calcualte the summary statistics for the precipitation data
+################################################# Get the measurement data
 ann_prcp_query = session.query(Measurement.date,Measurement.prcp).\
     filter(Measurement.date >= func.strftime("%Y-%m-%d",Prev_Last_date)).\
     order_by(Measurement.date).all()
@@ -98,9 +88,10 @@ ann_prcp_query = session.query(Measurement.date,Measurement.prcp).\
 ann_prcp_df = pd.DataFrame(ann_prcp_query, columns=['date', 'prcp'])
 ann_prcp_df.set_index('date', inplace=True)
 
-ann_prcp_max = ann_prcp_df.groupby(["date"]).max()["prcp"]
-ann_prcp_min = ann_prcp_df.groupby(["date"]).min()["prcp"]
-ann_prcp_sum = ann_prcp_df.groupby(["date"]).sum()["prcp"]
+## get the summary of the various dates
+ann_prcp_max   = ann_prcp_df.groupby(["date"]).max()["prcp"]
+ann_prcp_min   = ann_prcp_df.groupby(["date"]).min()["prcp"]
+ann_prcp_sum   = ann_prcp_df.groupby(["date"]).sum()["prcp"]
 ann_prcp_count = ann_prcp_df.groupby(["date"]).count()["prcp"]
 
 ann_prcp_dict = {"Max": round(ann_prcp_max, 2), "Min": round(ann_prcp_min, 2),
@@ -108,30 +99,19 @@ ann_prcp_dict = {"Max": round(ann_prcp_max, 2), "Min": round(ann_prcp_min, 2),
 
 ann_prcp_summary_df = pd.DataFrame(ann_prcp_dict)
 
-#################################################
+################################################# Get the station information
 stations_query = session.query(Station.station,Station.name, Station.latitude, Station.longitude, Station.elevation).all()
 stations_df = pd.DataFrame(stations_query, columns=['station', 'name','latitude','longitude','elevation'])
 stations_df.set_index('station', inplace=True) 
 
-
-#################################################
-# Design a query to find the most active stations
-# List the stations and the counts in descending order
+################################################# Get some summary statistics for the most active station
 most_active_stations_query = session.query(Measurement.station,func.count(Measurement.station)).\
     group_by(Measurement.station).\
     order_by(func.count(Measurement.station).desc())
 
 all_most_active_stations = most_active_stations_query.all()
-all_most_active_stations
-
-# Using the most active station id from the previous query, calculate the lowest, highest, and average temperature.
 most_active_station_id = most_active_stations_query.first()[0]
-most_active_station_id
 
-temp_summ = session.query(func.min(Measurement.tobs),func.max(Measurement.tobs),func.avg(Measurement.tobs)).\
-    filter(Measurement.station == most_active_station_id).all()
-
-#################################################
 ann_tobs_query = session.query(Measurement.date,Measurement.tobs).\
     filter(Measurement.date >= func.strftime("%Y-%m-%d",Prev_Last_date), Measurement.station == most_active_station_id).\
     order_by(Measurement.date).all()
@@ -164,60 +144,27 @@ def index():
 #################################################
 @app.route("/api/v1.0/precipitation")
 def precipitation():
-    #result={}
-    #for index, row in ann_prcp_summary_df.iterrows():
-    #    result[index]=dict(row)
-    return create_JSON_from_dict(ann_prcp_summary_df) #jsonify(result) 
+    return create_JSON_from_dict(ann_prcp_summary_df)
 
 #################################################
 @app.route("/api/v1.0/stations")
 def stations():
-    #result={}
-    #for index, row in stations_df.iterrows():
-    #    result[index]=dict(row)
-    return create_JSON_from_dict(stations_df) #jsonify(result) 
+    return create_JSON_from_dict(stations_df)
 
 #################################################
 @app.route("/api/v1.0/tobs")
 def tobs():
-    #result={}
-    #for index, row in ann_tobs_df.iterrows():
-    #    result[index]=dict(row)
-    return create_JSON_from_dict(ann_tobs_df) #jsonify(result)
+    return create_JSON_from_dict(ann_tobs_df)
 
 #################################################
 @app.route("/api/v1.0/<start>")
 def fromstartdate(start):
-    session = Session(engine)
-    #fr_start_date_query = session.query(
-    #        func.max(Measurement.tobs).label("TMAX"),
-    #        func.avg(Measurement.tobs).label("TAVG"),
-    #        func.min(Measurement.tobs).label("TMIN")
-    #        ).\
-    #    filter(Measurement.date >= start).all()
-
-    #fr_start_date_df = pd.DataFrame(fr_start_date_query, columns=['TMAX', 'TAVG', 'TMIN'])
-    #result = fr_start_date_df.iloc[0].to_dict()
-
-    #session.close()
-    return create_JSON_date_range(start, end=None) #jsonify(result)
+    return create_JSON_date_range(start, end=None)
 
 #################################################
 @app.route("/api/v1.0/<start>/<end>")
 def fromrange(start, end):
-    #session = Session(engine)
-    #fromrange_query = session.query(
-    #        func.max(Measurement.tobs).label("TMAX"),
-    #        func.avg(Measurement.tobs).label("TAVG"),
-    #        func.min(Measurement.tobs).label("TMIN")
-    #        ).\
-    #    filter(Measurement.date >= start, Measurement.date <= end).all()
-
-    #fromrange_df = pd.DataFrame(fromrange_query, columns=['TMAX', 'TAVG', 'TMIN'])
-    #result = fromrange_df.iloc[0].to_dict()
-
-    #session.close()
-    return create_JSON_date_range(start, end) #jjsonify(result)
+    return create_JSON_date_range(start, end)
 
 #################################################
 if __name__ == "__main__":
