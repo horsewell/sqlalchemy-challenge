@@ -52,15 +52,13 @@ def create_JSON_date_range(start, end=None):
                 func.max(Measurement.tobs).label("TMAX"),
                 func.avg(Measurement.tobs).label("TAVG"),
                 func.min(Measurement.tobs).label("TMIN")
-                ).\
-            filter(Measurement.date >= start).all()
+                ).filter(Measurement.date >= start).all()
     else:
         fr_start_date_query = session.query(
                 func.max(Measurement.tobs).label("TMAX"),
                 func.avg(Measurement.tobs).label("TAVG"),
                 func.min(Measurement.tobs).label("TMIN")
-                ).\
-            filter(Measurement.date >= start, Measurement.date <= end).all()
+                ).filter(Measurement.date >= start, Measurement.date <= end).all()
 
     fr_start_date_query = pd.DataFrame(fr_start_date_query, columns=['TMAX', 'TAVG', 'TMIN'])
     result = fr_start_date_query.iloc[0].to_dict()
@@ -79,6 +77,9 @@ Last_date = dt.date.fromisoformat(Last_date_str)
 
 # Calculate the date one year from the last date in data set.
 Prev_Last_date = dt.date(Last_date.year-1,Last_date.month,Last_date.day)
+
+# print the dates
+print(f"Most Recent Data: {Last_date_str}, and a year before: {Prev_Last_date}")
 
 ################################################# Get the measurement data
 ann_prcp_query = session.query(Measurement.date,Measurement.prcp).\
@@ -100,7 +101,7 @@ ann_prcp_dict = {"Max": round(ann_prcp_max, 2), "Min": round(ann_prcp_min, 2),
 ann_prcp_summary_df = pd.DataFrame(ann_prcp_dict)
 
 ################################################# Get the station information
-stations_query = session.query(Station.station,Station.name, Station.latitude, Station.longitude, Station.elevation).all()
+stations_query = session.query(Station.station, Station.name, Station.latitude, Station.longitude, Station.elevation).all()
 stations_df = pd.DataFrame(stations_query, columns=['station', 'name','latitude','longitude','elevation'])
 stations_df.set_index('station', inplace=True) 
 
@@ -111,6 +112,9 @@ most_active_stations_query = session.query(Measurement.station,func.count(Measur
 
 all_most_active_stations = most_active_stations_query.all()
 most_active_station_id = most_active_stations_query.first()[0]
+
+# print the most active station
+print(f"Most Active Station: {most_active_station_id}")
 
 ann_tobs_query = session.query(Measurement.date,Measurement.tobs).\
     filter(Measurement.date >= func.strftime("%Y-%m-%d",Prev_Last_date), Measurement.station == most_active_station_id).\
